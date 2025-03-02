@@ -361,6 +361,12 @@ class GUI(QWidget):
 			self.updatePositionTimer = QTimer()
 			self.updatePositionTimer.timeout.connect(self.updatePosition)
 
+		def run(self):
+			self.updatePositionTimer.start(100)
+
+		def stop(self):
+			self.updatePositionTimer.stop()
+
 		def hwJoyMoved(self, x, y):
 			if -0.01<x<0.01: x=0
 			else: x**=3
@@ -372,14 +378,11 @@ class GUI(QWidget):
 
 		def jbMoved(self, b, xy):
 			self.joy_x, self.joy_y = xy
-			if self.joy_x or self.joy_y:
-				if not self.updatePositionTimer.isActive():
-					self.updatePositionTimer.start(100)
-			else:
-				if self.updatePositionTimer.isActive():
-					self.updatePositionTimer.stop()
 
 		def updatePosition(self):
+			if self.joy_x == 0 and self.joy_y == 0:
+				return
+
 			if self.mode1.isChecked():
 				dlat = self.maxSpeedSb.value() * self.joy_y * 2.5e-07
 				dlon = self.maxSpeedSb.value() * self.joy_x * 2.5e-07 / math.cos(math.radians(self.gui.coords.lat))
@@ -423,6 +426,7 @@ class GUI(QWidget):
 			print(x)
 			exit(1)
 
+		self.modeTabChanged()
 
 	def initUI(self):
 		mainvbox = QVBoxLayout(self)
@@ -456,10 +460,19 @@ class GUI(QWidget):
 		self.modeTab = QTabWidget()
 		for t in [self.SimulationTab]:
 			self.modeTab.addTab(t(self), t.tabTitle)
+
+		self.modeTab.currentChanged.connect(self.modeTabChanged)
 		mainvbox.addWidget(self.modeTab)
 
 		self.setWindowTitle(u'GPSd Simulator')
 		self.show()
+
+	def modeTabChanged(self):
+		clickedIndex = self.modeTab.currentIndex()
+		for i in range(self.modeTab.count()):
+			if i != clickedIndex:
+				self.modeTab.widget(i).stop()
+		self.modeTab.widget(clickedIndex).run()
 
 	def update(self):
 		if self.headingFromCoordsChange.isChecked():
