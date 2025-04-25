@@ -475,6 +475,8 @@ class GUI(QWidget):
 		self.modeTab.widget(clickedIndex).run()
 
 	def update(self):
+		if self.sender() == self.coords:
+			self.dateTime.now()
 		if self.headingFromCoordsChange.isChecked():
 			self.heading.setValue(self.coords.getHeading())
 		self.server.sendCoordsToClients(self.coords.lat, self.coords.lon, time=self.dateTime.time, altitude=self.altitude.value(), heading=self.heading.value())
