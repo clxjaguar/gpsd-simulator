@@ -254,7 +254,7 @@ class GUI(QWidget):
 				self.lon-=360
 
 			self.blockSignals(True)
-			self.setText("%.6f %.6f" % (self.lat, self.lon))
+			self.setText("%.8f %.8f" % (self.lat, self.lon))
 			self.blockSignals(False)
 
 		def getHeading(self):
