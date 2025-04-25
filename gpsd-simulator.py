@@ -231,6 +231,15 @@ class GUI(QWidget):
 						self.setText("%s.%s %s.%s" % (match.group(1), match.group(2), match.group(3), match.group(4)))
 						return
 
+					match = re.search("^\s*([0-9\-]+)\s*°\s*(\d+)\s*'\s*([0-9.,]+)\s*[\"']{0,2}\s*(N|S|n|s|)\s*[,;\/]?\s*([0-9\-]+)\s*°\s*(\d+)\s*'\s*([0-9.,]+)\s*[\"']{0,2}\s*(E|W|e|w|)\s*$", text)
+					if match:
+						lat = float(match[1]) + float(match[2])/60.0 + float(match[3])/3600.0
+						lon = float(match[5]) + float(match[6])/60.0 + float(match[7])/3600.0
+						if match[4].upper() == 'S': lat = -lat
+						if match[8].upper() == 'W': lon = -lon
+						self.setText("%.8f %.8f" % (lat, lon))
+						return
+
 				except:
 					pass
 
