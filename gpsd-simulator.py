@@ -449,7 +449,7 @@ class GUI(QWidget):
 		l.addWidget(self.coords, l.rowCount()-1, 2, 1, 2)
 
 		self.dateTime = self.DateTimeLineEdit()
-		l.addWidget(QLabel("Time"), l.rowCount(), 1)
+		l.addWidget(QLabel("UTC Time"), l.rowCount(), 1)
 		l.addWidget(self.dateTime, l.rowCount()-1, 2, 1, 2)
 
 		self.heading = self.HeadingSpinBox()
