@@ -11,7 +11,7 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtNetwork import *
 
 import os, sys, time, math, socket, re, pyqtgraph, pygame.joystick, geopy.distance
-from datetime import datetime
+from datetime import datetime, timezone
 
 class Server(QObject):
 	statusUpdate = pyqtSignal()
@@ -430,6 +430,83 @@ class GUI(QWidget):
 		def closeEvent(self, event):
 			self.joystick.stop()
 
+	class Nmea0183Tab(QWidget):
+		tabTitle = "NMEA 0183"
+
+		def __init__(self, gui):
+			QWidget.__init__(self)
+			self.gui = gui
+			layout = QVBoxLayout(self)
+			l = QHBoxLayout()
+			self.filename = QLineEdit("/dev/rfcomm0")
+			l.addWidget(self.filename)
+			b = QToolButton(); b.setText("...")
+			b.clicked.connect(self.selectFileClicked)
+			l.addWidget(b)
+			b = QToolButton(); b.setText("Open")
+			b.clicked.connect(self.openFileClicked)
+			l.addWidget(b)
+			layout.addLayout(l)
+			self.gpsStatusText = QLabel("")
+			layout.addWidget(self.gpsStatusText)
+			layout.addStretch()
+
+		def selectFileClicked(self):
+			filename = QFileDialog.getOpenFileName(self)[0]
+			if filename:
+				self.filename.setText(filename)
+
+		def openFileClicked(self):
+			self.fd = open(self.filename.text(), "r")
+			self.timer = QTimer()
+			self.timer.timeout.connect(self.periodicRead)
+			self.timer.start(100)
+
+		def periodicRead(self):
+			while(True):
+				msg = self.fd.readline().strip()
+				if not msg:
+					break
+
+				if (p := msg.find("$GPRMC,")) != -1:
+					data = msg[p:].split(',')
+
+					t, d = data[1], data[9]
+					datetime = "20%2s-%2s-%2s %2s:%2s:%2s" % (d[4:6], d[2:4], d[0:2], t[0:2], t[2:4], t[4:6])
+
+					if data[2] == 'A':
+						sta = "Valid fix"
+						lat = float(data[3][:2]) + float(data[3][2:])/60
+						if data[4] == 'S':
+							lat = -lat
+						lon = float(data[5][:3]) + float(data[5][3:])/60
+						if data[4] == 'W':
+							lon = -lon
+
+						self.gui.dateTime.setText(datetime)
+
+						if not self.gui.headingFromCoordsChange.isChecked():
+							self.gui.heading.setValue(float(data[8]), delta=False)
+
+						self.gui.coords.move(lat, lon)
+						self.gui.update()
+
+					else:
+						sta = "No fix (yet?)"
+
+					self.gpsStatusText.setText("GPS time: %s\n%s" % (datetime, sta))
+
+					break
+
+		def run(self):
+			pass
+
+		def stop(self):
+			self.timer = None
+			self.fd = None
+			self.gpsStatusText.setText("")
+			pass
+
 
 	def __init__(self):
 		QWidget.__init__(self)
@@ -476,7 +553,7 @@ class GUI(QWidget):
 		l.addWidget(self.altitude, l.rowCount()-1, 2)
 
 		self.modeTab = QTabWidget()
-		for t in [self.SimulationTab]:
+		for t in [self.SimulationTab, self.Nmea0183Tab]:
 			self.modeTab.addTab(t(self), t.tabTitle)
 
 		self.modeTab.currentChanged.connect(self.modeTabChanged)
