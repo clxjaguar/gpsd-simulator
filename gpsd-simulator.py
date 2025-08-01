@@ -193,16 +193,25 @@ class GUI(QWidget):
 			self.setReadOnly(True)
 			self.setStyleSheet('color: gray;')
 
-		def now(self):
-			self.time = time.time()
-			self.datetime = datetime.utcfromtimestamp(self.time)
-			self.setText(self.datetime.strftime("%Y-%m-%d %H:%M:%S.%f"))
-			self.setStyleSheet('')
+		def setText(self, text):
+			try:
+				QLineEdit.setText(self, text)
+				self.datetime = datetime.fromisoformat(text)
+				self.datetime = self.datetime.replace(tzinfo=timezone.utc)
+				self.time = self.datetime.timestamp()
+				self.setStyleSheet('')
 
-		def set(self, ts):
-			self.time = ts
+			except Exception as e:
+				print(e)
+				self.setStyleSheet('color: gray;')
+
+		def now(self):
+			self.set(time.time())
+
+		def set(self, time):
+			self.time = time
 			self.datetime = datetime.utcfromtimestamp(self.time)
-			self.setText(self.datetime.strftime("%Y-%m-%d %H:%M:%S.%f"))
+			QLineEdit.setText(self, self.datetime.strftime("%Y-%m-%d %H:%M:%S.%f"))
 			self.setStyleSheet('')
 
 	class CoordsLineEdit(QLineEdit):
